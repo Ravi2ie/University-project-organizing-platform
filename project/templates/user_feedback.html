@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Disbursement System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #5A67D8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #4C51BF;
+        }
+        #projectResult {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #555;
+            background-color: #e2e8f0;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+            text-align: center;
+        }
+        form {
+            margin-top: 20px;
+        }
+        iframe {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .available {
+            color: green;
+        }
+        .unavailable {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>project Organizing platform</h1>
+    
+    <div id="projectResult"></div>
+    <form id="writeDataForm" action="http://localhost/user_pre.php" method="POST">
+        <button type="submit">Write on the file</button>
+    </form><br>
+    <button onclick="checkProject()">Prioritize</button><br>
+    <form id="showDataForm" action="http://localhost/show_data.php" method="POST" target="reversedDataFrame">
+        <button type="submit">Show the data</button>
+    </form>
+    <iframe id="reversedDataFrame" name="reversedDataFrame" style="width:100%; height:400px;"></iframe>
+    
+    <script>
+        function checkProject() {
+            fetch('/checkProject')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('projectResult').innerHTML = data;
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comments</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* CSS for comments */
+        .comment {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .reply {
+            margin-left: 20px;
+            border-left: 1px solid #ccc;
+            padding-left: 10px;
+        }
+        .comment .voting {
+            margin-top: 10px;
+        }
+        .comment .voting button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 5px;
+        }
+        .comment .voting button:hover {
+            color: #007bff;
+        }
+        #comment-form {
+            margin-top: 20px;
+        }
+        #comment-form input[type="text"],
+        #comment-form textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        #comment-form button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        #comment-form button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="comments-container"></div>
+
+    <form id="comment-form">
+        <input type="text" id="commenter" placeholder="Your Name" required>
+        <textarea id="comment-content" placeholder="Your Comment" required></textarea>
+        <button type="submit">Add Comment</button>
+    </form>
+
+    <script>
+        let commentsData = null;
+
+        // Function to recursively extract comments
+        function extractComments(commentData) {
+            let extractedComments = '';
+            commentData.forEach(comment => {
+                extractedComments += '<div class="comment">';
+                extractedComments += `<p><strong>${comment.commenter}</strong>: ${comment.comment}</p>`;
+                extractedComments += '<div class="voting">';
+                extractedComments += `<button onclick="upvote('${comment.id}')"><i class="fas fa-thumbs-up"></i></button>`;
+                extractedComments += `<span id="votes-${comment.id}">${comment.netVotes}</span>`;
+                extractedComments += `<button onclick="downvote('${comment.id}')"><i class="fas fa-thumbs-down"></i></button>`;
+                extractedComments += `<button onclick="reply('${comment.id}')"><i class="fas fa-reply"></i></button>`;
+                extractedComments += '</div>';
+                if (comment.children.length > 0) {
+                    extractedComments += extractComments(comment.children);
+                }
+                extractedComments += '</div>';
+            });
+            return extractedComments;
+        }
+
+        // Upvote a comment
+        function upvote(commentId) {
+            const comment = findCommentById(commentId);
+            if (comment) {
+                comment.netVotes++;
+                updateCommentsDisplay();
+            }
+        }
+
+        // Downvote a comment
+        function downvote(commentId) {
+            const comment = findCommentById(commentId);
+            if (comment) {
+                comment.netVotes--;
+                updateCommentsDisplay();
+            }
+        }
+
+        // Reply to a comment
+        function reply(commentId) {
+            const commenter = prompt('Enter your name:');
+            const content = prompt('Enter your reply:');
+            if (commenter && content) {
+                const comment = findCommentById(commentId);
+                if (comment) {
+                    const id = comment.children.length > 0 ? `${comment.id}-${comment.children.length + 1}` : `${comment.id}-1`;
+                    comment.children.push({
+                        id,
+                        commenter,
+                        comment: content,
+                        netVotes: 0,
+                        userVote: 0,
+                        commenterBan: false,
+                        children: []
+                    });
+                    updateCommentsDisplay();
+                }
+            }
+        }
+
+        // Find a comment by its ID
+        function findCommentById(commentId) {
+            for (let i = 0; i < commentsData.length; i++) {
+                if (commentsData[i].id === commentId) {
+                    return commentsData[i];
+                }
+                const childComment = findChildCommentById(commentsData[i].children, commentId);
+                if (childComment) {
+                    return childComment;
+                }
+            }
+            return null;
+        }
+
+        // Find a child comment by its ID
+        function findChildCommentById(children, commentId) {
+            for (let i = 0; i < children.length; i++) {
+                if (children[i].id === commentId) {
+                    return children[i];
+                }
+                const found = findChildCommentById(children[i].children, commentId);
+                if (found) {
+                    return found;
+                }
+            }
+            return null;
+        }
+
+        // Update comments display after voting or replying
+        function updateCommentsDisplay() {
+            const commentsContainer = document.getElementById('comments-container');
+            commentsContainer.innerHTML = extractComments(commentsData);
+            saveCommentsToJson();
+        }
+
+        // Read the JSON file using fetch API
+        fetch('comments.json') // Accessing the JSON file from the local server
+            .then(response => response.json())
+            .then(data => {
+                commentsData = data;
+                updateCommentsDisplay(); // Output extracted comments
+            });
+
+        // Save comments data back to JSON file
+        function saveCommentsToJson() {
+            const jsonData = JSON.stringify(commentsData);
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'comments.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Add event listener for comment submission
+        document.getElementById('comment-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const commenter = document.getElementById('commenter').value.trim();
+            const content = document.getElementById('comment-content').value.trim();
+            if (commenter && content) {
+                const id = (commentsData.length + 1).toString();
+                commentsData.push({
+                    id,
+                    commenter,
+                    comment: content,
+                    netVotes: 0,
+                    userVote: 0,
+                    commenterBan: false,
+                    children: []
+                });
+                updateCommentsDisplay();
+                document.getElementById('commenter').value = '';
+                document.getElementById('comment-content').value = '';
+            } else {
+                alert('Please enter your name and comment.');
+            }
+        });
+    </script>
+</body>
+</html>
